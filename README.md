@@ -1,13 +1,12 @@
-**rpi-bt-lightcontroller**
-======================
+# rpi-bt-lightcontroller
 
 RaspberryPi light controller using bluetooth.
 It was tested in RaspberryPi ZeroW.
 
-# Requirements
+## Requirements
 
 On raspbian or raspberryos, install the required python bluetooth, bluez firmaware, bluetooth and GPIO python libraries:
-```
+```Shell
 $ sudo apt update
 $ sudo apt upgrade
 $ sudo apt install bluetooth bluez
@@ -16,37 +15,37 @@ $ sudo apt install python-rpi.gpio
 ```
 
 Install the bluetooth python packages
-```
+```Shell
 $ pip3 install PyBluez
 ```
 
 Enable the serial port in bluetooth.
-```bash
+```Shell
 $ sudo vi /etc/systemd/system/dbus-org.bluez.service
 ```
 Add the compatibily -C flag and the SP profile
-```
+```Ini
 ExecStart=/usr/lib/bluetooth/bluetoothd -C
 ExecStartPost=/usr/bin/sdptool add SP
 ```
 
 Grant the pi user to use bluetooth service
-```
+```Shell
 $ sudo adduser pi bluetooth
 $ sudo reboot
 ```
 
 
 
-# Setup bluetooth 
+## Setup bluetooth 
 1. Check the bluetooth service
-```
+```Shell
 $ bluetoothctl -v
 $ sudo systemctl status blueto*
 ```
 
 2. Open the bluethoothctl utility 
-```
+```Shell
 $ bluetoothctl
 
 [bluetooth]# power on
@@ -58,7 +57,7 @@ $ bluetoothctl
 
 3. Please pair your raspberrypi with your smartphone.
 
-# Android Bluetooth client
+## Android Bluetooth client
 
 You can use the following Android Client to test the light control
 https://github.com/diegofn/BTLightController
@@ -67,9 +66,9 @@ or test it with a bluetooth chatbot controller using
 https://play.google.com/store/apps/details?id=com.electrotoolbox.bluetoothterminal
 
 
-# Optional - Updating blueZ 
+## Updating blueZ - Optional
 Some rasperrypios distribution does not support a bluetooth serial interface, you need to update the BlueZ with the following commands    
-```
+```Shell
 $ mkdir ~/Documents/bluez
 $ cd ~/Documents/bluez
 $ sudo apt update
@@ -82,38 +81,28 @@ $ sudo make install
 ```
 
 Change the BlueZ policy
-```
+```Shell
 $ sudo cp /etc/dbus-1/system.d/bluetooth.conf /etc/dbus-1/system.d/bluetooth.conf.bak
 $ sudo vi /etc/dbus-1/system.d/bluetooth.conf
 ```
 
 Add the following lines
-```
+```xml
 ...
   <policy user="root">
     <allow own="org.bluez"/>
     <allow send_destination="org.bluez"/>
     <allow send_interface="org.bluez.Agent1"/>
-    <allow send_interface="org.bluez.MediaEndpoint1"/>
-    <allow send_interface="org.bluez.MediaPlayer1"/>
-    <allow send_interface="org.bluez.Profile1"/>
-    <allow send_interface="org.bluez.AlertAgent1"/>
+    ...
     <allow send_interface="org.bluez.ThermometerWatcher1"/>
     <allow send_interface="org.bluez.HeartRateWatcher1"/>
     <allow send_interface="org.bluez.CyclingSpeedWatcher1"/>
-    <allow send_interface="org.bluez.GattCharacteristic1"/>
-    <allow send_interface="org.bluez.GattDescriptor1"/>
-    <allow send_interface="org.bluez.LEAdvertisement1"/>
-    <allow send_interface="org.freedesktop.DBus.ObjectManager"/>
-    <allow send_interface="org.freedesktop.DBus.Properties"/>
+    ...
   </policy>
 
   <!-- allow users of bluetooth group to communicate -->
   <policy group="bluetooth">
     <allow send_destination="org.bluez"/>
   </policy>
-
-  <policy at_console="true">
-    <allow send_destination="org.bluez"/>
-  </policy>
+  ...
 ```
