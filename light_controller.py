@@ -3,76 +3,121 @@
 import bluetooth
 import RPi.GPIO as GPIO
 
-#
-# Define the raspberrypi leds
-#
-LEFT_LED=21
-RIGHT_LED=20
-LIGHT1_LED=16
+import threading
+import time
+import logging
+logger = logging.getLogger(__name__)
 
 #
-# Programming the GPIO by BCM pin numbers. (like PIN40 as GPIO21)
+# Light Controller
 #
-GPIO.setmode(GPIO.BCM)     
-GPIO.setwarnings(False)
-GPIO.setup(LEFT_LED, GPIO.OUT)
-GPIO.setup(RIGHT_LED, GPIO.OUT)
-GPIO.setup(LIGHT1_LED, GPIO.OUT)  
-
-#
-# Start the lights
-#
-GPIO.output(LEFT_LED, 0)
-GPIO.output(RIGHT_LED, 0)
-GPIO.output(LIGHT1_LED, 0)
-
-#
-# Define the server socket
-#
-server_socket = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
- 
-port = 1
-server_socket.bind(("", port))
-server_socket.listen(1)
-client_socket, address = server_socket.accept()
-print ("Accepted connection from " + str(address))
-
-#
-# Main thread
-#
-while 1:
-    data = client_socket.recv(1024).decode('utf-8')
-    print ("Received: %s" % data)
-
-    if (data == "0,1,0;"):    
-        #if '1' is sent from the Android App, turn OFF the LED
-        print ("GPIO 21 HIGH (LEFT LED) ON")
-        GPIO.output(LEFT_LED, 1)
-
-    elif (data == "0,0,0;"):    
-        #if '0' is sent from the Android App, turn OFF the LED
-        print ("GPIO 21 LOW (LEFT LED) OFF")
-        GPIO.output(LEFT_LED, 0)
+class LightController():
+    def __init__(self, name, led_id):
+        self.name = name
+        self.led_id = led_id
+        self.state = 0
+        self.laststate = 0
+        self.led_timer = 0
+        
+        GPIO.setup(self.led_id, GPIO.OUT)
+        GPIO.output(self.led_id, 0)
+        
+        self._running = True
+        self.thread = threading.Thread(target=self.run, name=name)
+        self.thread.start()
     
-    elif (data == "1,1,0;"):    
-        print ("GPIO 20 HIGH (RIGHT_LED) ON")
-        GPIO.output(RIGHT_LED, 1)
+    def setState(self, led_state, led_timer):
+        self.state = led_state
+        self.led_timer = led_timer
 
-    elif (data == "1,0,0;"):    
-        print ("GPIO 20 LOW (RIGHT_LED) OFF")
-        GPIO.output(RIGHT_LED, 0)
+    def terminate(self):
+        self._running = False
 
-    elif (data == "2,1,0;"):    
-        print ("GPIO 16 HIGH (LIGHT1_LED) ON")
-        GPIO.output(LIGHT1_LED, 1)
+    def run(self):
+        while self._running:
+            time.sleep(0.05)
+            if self.laststate != self.state and self.led_timer == 0:
+                logger.info ("LED {0} GPIO {1} STATE {2}".format(self.led_id, self.name, self.state))
+                GPIO.output(self.led_id, self.state)
+                self.laststate = self.state
+            
+            if self.led_timer > 0:
+                time.sleep(self.led_timer)
+                logger.info ("LED {0} GPIO {1} STATE {2}".format(self.led_id, self.name, self.state))
+                GPIO.output(self.led_id, self.state)
+                if (self.state == '1'): self.state = '0'
+                elif (self.state == '0'): self.state = '1'
 
-    elif (data == "2,0,0;"):
-        print ("GPIO 16 LOW (LIGHT1_LED) OFF")
-        GPIO.output(LIGHT1_LED, 0)
 
-    elif (data == "q"):
-        print ("Quit")
-        break
- 
-client_socket.close()
-server_socket.close()
+#
+# Main method
+# 
+if __name__ == "__main__":
+    #
+    # Start the logger
+    #
+    logging.basicConfig(level=logging.DEBUG)
+    logger.info("Starting LED control")
+    
+    #
+    # Define the raspberrypi leds
+    #
+    LEFT_LED=21
+    RIGHT_LED=20
+    LIGHT1_LED=16
+
+    #
+    # Programming the GPIO by BCM pin numbers. (like PIN40 as GPIO21)
+    #
+    GPIO.setmode(GPIO.BCM)     
+    GPIO.setwarnings(False)
+
+    #
+    # Start the lights
+    #
+    controller_left = LightController('Left', LEFT_LED)
+    controller_right = LightController('Right', RIGHT_LED)
+    controller_1 = LightController('One', LIGHT1_LED)
+
+    #
+    # Define the server socket
+    #
+    logger.info("Starting bluetooth controller")
+    server_socket = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+    port = 1
+    server_socket.bind(("", port))
+    server_socket.listen(1)
+    client_socket, address = server_socket.accept()
+    logger.info("Accepted connection from " + str(address))
+
+    while True:
+        data = client_socket.recv(1024).decode('utf-8')
+        logger.info ("Received: %s" % data)
+
+        if (data == "0,1,0;"):    
+            controller_left.setState(1, 0)
+
+        elif (data == "0,0,0;"):    
+            controller_left.setState(0, 0)
+        
+        elif (data == "1,1,0;"):    
+            controller_right.setState(1, 0)
+
+        elif (data == "1,0,0;"):    
+            controller_right.setState(0, 0)
+
+        elif (data == "2,1,0;"):    
+            controller_1.setState(1, 0)
+
+        elif (data == "2,0,0;"):
+            controller_1.setState(0, 0)
+
+        elif (data == "q"):
+            logger.info ("Quit")
+            controller_left.terminate()
+            controller_right.terminate()
+            controller_1.terminate()
+            break
+    
+    client_socket.close()
+    server_socket.close()
