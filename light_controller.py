@@ -95,33 +95,44 @@ if __name__ == "__main__":
     port = 1
     server_socket.bind(("", port))
     server_socket.listen(1)
-    client_socket, address = server_socket.accept()
-    logger.info("Accepted connection from " + str(address))
-
     while True:
-        data = client_socket.recv(1024).decode('utf-8')
-        logger.info ("Received: %s" % data)
+        client_socket, address = server_socket.accept()
+        logger.info("Accepted connection from " + str(address))
 
-        m = re.compile("(\d),(\d),(\d+);").search(data)
+        while True:
+            try:
+                data = client_socket.recv(1024).decode('utf-8')
+                logger.info ("Received: %s" % data)
 
-        if (m):
-            state = m.group(2)
-            timer = m.group(3)
-            if (m.group(1) == '0'):
-                controller_left.setState(state, timer)
+                m = re.compile("(\d),(\d),(\d+);").search(data)
 
-            elif (m.group(1) == '1'):
-                controller_right.setState(state, timer)
-            
-            elif (m.group(1) == '2'):
-                controller_1.setState(state, timer)
+                if (m):
+                    state = m.group(2)
+                    timer = m.group(3)
+                    if (m.group(1) == '0'):
+                        controller_left.setState(state, timer)
 
+                    elif (m.group(1) == '1'):
+                        controller_right.setState(state, timer)
+                    
+                    elif (m.group(1) == '2'):
+                        controller_1.setState(state, timer)
+
+                if (data == "q"):
+                    logger.info ("Quit")
+                    break
+
+            except bluetooth.btcommon.BluetoothError as error:
+                logger.info ("Caught BluetoothError: %s" % error)
+                time.sleep(0.5)
+                client_socket.close()
+                break
+    
         if (data == "q"):
-            logger.info ("Quit")
             controller_left.terminate()
             controller_right.terminate()
             controller_1.terminate()
             break
-    
+
     client_socket.close()
     server_socket.close()

@@ -44,7 +44,7 @@ $ bluetoothctl -v
 $ sudo systemctl status blueto*
 ```
 
-2. Open the bluethoothctl utility 
+2. Open the ``bluethoothctl`` utility 
 ```Shell
 $ bluetoothctl
 
@@ -69,7 +69,7 @@ https://play.google.com/store/apps/details?id=com.electrotoolbox.bluetoothtermin
 ## Install as a service - Optional
 You can configure the light controller to start the python script as a daemon service.
 
-1. Change the ``ExecStart`` and ``ExecStart`` in the ``light_controller.service`` file
+1. Change the ``ExecStart`` and ``WorkingDirectory`` in the ``light_controller.service`` file
 
 2. Run the following commands to copy the service file to filesystem daemon folder.
 ```Shell
