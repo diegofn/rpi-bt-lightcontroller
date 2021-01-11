@@ -1,0 +1,16 @@
+[Unit]
+    Description=light controller
+    After=network.target
+
+[Service]
+    ExecStart=/usr/bin/python3 //home/pi/Documents/python/rpi-bt-lightcontroller/light_controller.py
+    WorkingDirectory=/home/pi/Documents/python/rpi-bt-lightcontroller
+    StandardOutput=syslog
+    StandardError=syslog
+    SyslogIdentifier=light
+    User=pi
+    Group=pi
+    Restart=always
+
+[Install]
+    WantedBy=multi-user.target  

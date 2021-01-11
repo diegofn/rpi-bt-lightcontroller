@@ -66,6 +66,20 @@ or test it with a bluetooth chatbot controller using
 https://play.google.com/store/apps/details?id=com.electrotoolbox.bluetoothterminal
 
 
+## Install as a service - Optional
+You can configure the light controller to start the python script as a daemon service.
+
+1. Change the ``ExecStart`` and ``ExecStart`` in the ``light_controller.service`` file
+
+2. Run the following commands to copy the service file to filesystem daemon folder.
+```Shell
+$ sudo cp light_controller.service /etc/systemd/system
+$ sudo systemctl enable light_controller
+$ sudo systemctl start light_controller
+$ sudo systemctl status light_controller
+```
+3. Restart the system and check if the the script is running
+
 ## Updating blueZ - Optional
 Some rasperrypios distribution does not support a bluetooth serial interface, you need to update the BlueZ with the following commands    
 ```Shell
